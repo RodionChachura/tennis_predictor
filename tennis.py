@@ -46,4 +46,8 @@ def create_db(path=SQL_PATH, name=SQL_NAME):
 
 
 def predict(one, other):
-    return True
+    return {
+        'train_set_length': 0,
+        'train_set_thrown_data_persentage': 0,
+        'score': 0
+    }
