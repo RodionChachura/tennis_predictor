@@ -2,7 +2,7 @@ import shutil
 import unittest
 import tempfile
 
-from tennis import create_db
+from data_keeper import DataKeeper
 
 class TestDB(unittest.TestCase):
     @classmethod
@@ -16,4 +16,4 @@ class TestDB(unittest.TestCase):
         super(TestDB, cls).tearDownClass()
 
     def test_db_creation(self):
-        create_db(self.test_dir)
+        DataKeeper(self.test_dir)
