@@ -28,11 +28,9 @@ class DataKeeper:
                 
                 winner_id           integer    not null,
                 winner_rank_points  real,
-                winner_age          real,
 
                 loser_id            integer    not null,
                 loser_rank_points   real,
-                loser_age           real,
 
                 FOREIGN KEY (winner_id) REFERENCES players (id),
                 FOREIGN KEY (loser_id)  REFERENCES players (id)
@@ -41,7 +39,28 @@ class DataKeeper:
         self.connection.commit()
 
     def add_player(self, player):
-        pass
+        self.cursor.execute(
+            'insert into players values (?, ?, ?, ?, ?)',
+            (
+                player.id,
+                player.name,
+                player.dob,
+                player.hand,
+                player.rank_points
+            )
+        )
+        self.connection.commit()
 
     def add_match(self, match):
-        pass
+        self.cursor.execute(
+            'insert into matches values (?, ?, ?, ?, ?, ?)',
+            (
+                match.date,
+                match.score,
+                match.winner.id,
+                match.winner.rank_points,
+                match.loser.id,
+                match.loser.rank_points,
+            )
+        )
+        self.connection.commit()
