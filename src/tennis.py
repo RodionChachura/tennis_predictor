@@ -81,7 +81,7 @@ def get_database_from_csv(start_year=START_YEAR, end_year=END_YEAR):
             )
         )
 
-    all_matches = []
+    matches = []
     for csv_file in all_files:
         for match in csv_to_dicts(csv_file):
             winner_id = match['winner_id']
@@ -97,7 +97,7 @@ def get_database_from_csv(start_year=START_YEAR, end_year=END_YEAR):
                 logger.error('No loser or winner')
                 continue
 
-            all_matches.append(
+            matches.append(
                 Match(
                     match['tourney_date'],
                     match['score'],
@@ -105,6 +105,14 @@ def get_database_from_csv(start_year=START_YEAR, end_year=END_YEAR):
                     loser.with_other_rank_points(match['loser_rank_points'])
                 )
             )
+  
+    db = DataKeeper()
+    for player in players:
+        db.add_player(player)
+    for match in matches:
+        db.add_match(match)
+
+    return db
 
 def predict(one, other):
     return {
@@ -112,5 +120,3 @@ def predict(one, other):
         'train_set_thrown_data_persentage': 0,
         'score': 0
     }
-
-

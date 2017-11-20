@@ -2,7 +2,8 @@ import shutil
 import unittest
 import tempfile
 
-from data_keeper import DataKeeper
+from src.data_keeper import DataKeeper
+from src.tennis import get_database_from_csv
 
 class TestDB(unittest.TestCase):
     @classmethod
@@ -16,4 +17,5 @@ class TestDB(unittest.TestCase):
         super(TestDB, cls).tearDownClass()
 
     def test_db_creation(self):
-        DataKeeper(self.test_dir)
+        db = get_database_from_csv()
+        
