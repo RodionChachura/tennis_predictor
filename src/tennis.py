@@ -53,7 +53,7 @@ def get_database_from_csv(start_year=START_YEAR, end_year=END_YEAR):
             ranks.remove(to_remove)
         if (player_rank_already_exists and to_remove) or not player_rank_already_exists:
             ranks.append(rank)
-    
+
     players = []
     for fields in csv_to_lists(PLAYERS_CSV):
         player_id = fields[0]
@@ -80,24 +80,31 @@ def get_database_from_csv(start_year=START_YEAR, end_year=END_YEAR):
                 player_rank.rank_points
             )
         )
-    
+
     all_matches = []
-    for f in all_files:
-        for match in csv_to_dicts(f):
+    for csv_file in all_files:
+        for match in csv_to_dicts(csv_file):
+            winner_id = match['winner_id']
+            loser_id = match['loser_id']
+            winner = None
+            loser = None
+            for player in players:
+                if player.id == winner_id:
+                    winner = player
+                if player.id == loser_id:
+                    loser = player
+            if loser is None or winner is None:
+                logger.error('No loser or winner')
+                continue
+
             all_matches.append(
                 Match(
                     match['tourney_date'],
                     match['score'],
-                    winner = Player(
-                        match['winner_id'],
-                        match['winner_name'],
-                        
-                    )
+                    winner.with_other_rank_points(match['winner_rank_points']),
+                    loser.with_other_rank_points(match['loser_rank_points'])
                 )
             )
-
-
-    
 
 def predict(one, other):
     return {

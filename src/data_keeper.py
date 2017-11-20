@@ -40,8 +40,8 @@ class DataKeeper:
 
         self.connection.commit()
 
-    def create_player(self):
+    def add_player(self, player):
         pass
 
-    def poppulate(self, players, matches):
+    def add_match(self, match):
         pass
