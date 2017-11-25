@@ -64,3 +64,19 @@ class DataKeeper:
             )
         )
         self.connection.commit()
+    
+    def get_player_by_id(self, id):
+        self.cursor.execute(
+            'select from players where id=?',
+            (id,)
+        )
+
+        return self.cursor.fetchone()
+
+    def get_player_by_name(self, name):
+        self.cursor.execute(
+            'select from players where name=?',
+            (name,)
+        )
+
+        return self.cursor.fetchone()

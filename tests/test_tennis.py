@@ -3,6 +3,8 @@ import unittest
 import tempfile
 
 from src.tennis import get_database_from_csv
+from src.csv_helper import csv_to_lists
+from src.constants import LAST_RANKS_CSV
 
 class TestDB(unittest.TestCase):
     @classmethod
@@ -17,4 +19,8 @@ class TestDB(unittest.TestCase):
 
     def test_db_creation(self):
         db = get_database_from_csv()
-        
+
+class TestCSV(unittest.TestCase):
+    def test_csv_to_lists(self):
+        result = csv_to_lists(LAST_RANKS_CSV)
+        self.assertTrue(len(result) > 0)

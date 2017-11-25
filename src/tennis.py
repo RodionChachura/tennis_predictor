@@ -1,5 +1,6 @@
 import os
 import logging
+from datetime import datetime
 
 from .data_keeper import DataKeeper
 from .csv_helper import csv_to_dicts, csv_to_lists, get_matches_csvs
@@ -18,8 +19,6 @@ END_YEAR = 2017
 DATA_LOCATION = os.path.abspath('./data/')
 
 def get_database_from_csv(start_year=START_YEAR, end_year=END_YEAR):
-    logger.error(os.path.abspath(CSVS))
- 
     years = range(start_year, end_year)
     all_files = []
     for year in years:
@@ -27,9 +26,9 @@ def get_database_from_csv(start_year=START_YEAR, end_year=END_YEAR):
 
     ranks = []
     for fields in csv_to_lists(LAST_RANKS_CSV):
-        date = fields[0][:4] + '/' + fields[0][4:-2] + '/' + fields[0][:2]
-        player_id = fields[2]
-        rank_points = fields[3]
+        date = datetime.strptime(fields[0][:4] + '/' + fields[0][4:-2] + '/' + fields[0][:2], '%Y/%m/%d')
+        player_id = int(fields[2])
+        rank_points = int(fields[3])
         rank = Rank(player_id, date, rank_points)
 
         player_rank_already_exists = False
@@ -39,43 +38,55 @@ def get_database_from_csv(start_year=START_YEAR, end_year=END_YEAR):
                 player_rank_already_exists = True
                 if r.date < date:
                     to_remove = r
+                continue
         if to_remove is not None:
             ranks.remove(to_remove)
         if (player_rank_already_exists and to_remove) or not player_rank_already_exists:
             ranks.append(rank)
-
+            
+    logger.error('ranks: ' + str(len(ranks)))
     players = []
+    problematic_players = 0
+    no_rank_players = 0  
     for fields in csv_to_lists(PLAYERS_CSV):
-        player_id = fields[0]
-        player_name = fields[1] + ' ' + fields[2]
-        player_dob = fields[4]
-        player_rank = None
+        needed_fields = fields[:-1]
+        if len(needed_fields) < 5 or any(map(lambda x: len(x) < 1, fields)):
+            problematic_players += 1
+            continue
+        player_id = int(needed_fields[0])
+        player_name = needed_fields[1] + ' ' + needed_fields[2]
+        player_dob = int(needed_fields[4])
+        rank_points = None
         for rank in ranks:
             if rank.player_id == player_id:
-                player_rank = rank
-        if player_rank is None:
-            logger.error('''Player doesn't have rank
-                id: {0}
-                name: {1}
-                age: {2}
-            '''.format(player_id, player_name, years_from_timestamp(player_dob)))
-            continue
+                rank_points = rank.rank_points
+                continue
+        if rank_points is None:
+            # logger.error('''Player doesn't have rank
+            #     id: {0}
+            #     name: {1}
+            #     age: {2}
+            # '''.format(player_id, player_name, years_from_timestamp(player_dob)))
+            no_rank_players += 1
 
         players.append(
             Player(
                 player_id,
                 player_name,
-                fields[4],
-                fields[3],
-                player_rank.rank_points
+                player_dob,
+                needed_fields[3],
+                rank_points
             )
         )
+    logger.error('normal: ' + str(len(players)))
+    logger.error('problematic: ' + str(problematic_players))
+    logger.error('no rank: ' + str(no_rank_players))
 
     matches = []
     for csv_file in all_files:
         for match in csv_to_dicts(csv_file):
-            winner_id = match['winner_id']
-            loser_id = match['loser_id']
+            winner_id = int(match['winner_id'])
+            loser_id = int(match['loser_id'])
             winner = None
             loser = None
             for player in players:
