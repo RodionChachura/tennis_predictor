@@ -2,7 +2,6 @@ import shutil
 import unittest
 import tempfile
 
-from src.data_keeper import DataKeeper
 from src.tennis import get_database_from_csv
 
 class TestDB(unittest.TestCase):

@@ -1,35 +1,25 @@
 import os
-from datetime import datetime
 import logging
 
-from data_keeper import DataKeeper
-from csv_helper import csv_to_dicts, csv_to_lists
-from match import Match
-from player import Player
-from rank import Rank
+from .data_keeper import DataKeeper
+from .csv_helper import csv_to_dicts, csv_to_lists, get_matches_csvs
+from .match import Match
+from .player import Player
+from .rank import Rank
+from .logger import setup_logger
+from .utils import years_from_timestamp
+from .constants import CSVS, LAST_RANKS_CSV, PLAYERS_CSV
 
 logger = logging.getLogger(__name__)
+setup_logger()
 
 START_YEAR = 2000
 END_YEAR = 2017
-DATA_LOCATION = './data/'
-CSVS = DATA_LOCATION + 'scvs/'
-PLAYERS_CSV = os.path.join(CSVS, 'atp_players.csv')
-LAST_RANKS_CSV = os.path.join(CSVS, 'atp_ranking_current.csv')
-
-def years_from_timestamp(timestamp):
-    start_date = datetime.fromtimestamp(timestamp)
-    end_date = datetime.now()
-    years = start_date.year - end_date.year
-    if end_date.month < start_date.month or (end_date.month == start_date.month and end_date.day < start_date.day):
-        years -= 1
-    return years
-
-def get_matches_csvs(year):
-    file_names = ['atp_matches_', 'atp_matches_quall_chall_', 'atp_matches_futures_']
-    return [os.path.join(CSVS, file_name + str(year) + '.scv') for file_name in file_names]
+DATA_LOCATION = os.path.abspath('./data/')
 
 def get_database_from_csv(start_year=START_YEAR, end_year=END_YEAR):
+    logger.error(os.path.abspath(CSVS))
+ 
     years = range(start_year, end_year)
     all_files = []
     for year in years:
@@ -105,7 +95,7 @@ def get_database_from_csv(start_year=START_YEAR, end_year=END_YEAR):
                     loser.with_other_rank_points(match['loser_rank_points'])
                 )
             )
-  
+
     db = DataKeeper()
     for player in players:
         db.add_player(player)

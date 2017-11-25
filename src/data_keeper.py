@@ -1,7 +1,7 @@
 import sqlite3
 import os
 
-SQL_PATH = '.'
+SQL_PATH = '../data/'
 SQL_NAME = 'tennis'
 
 
