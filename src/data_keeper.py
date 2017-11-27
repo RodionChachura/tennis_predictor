@@ -1,12 +1,13 @@
 import sqlite3
 import os
 
-SQL_PATH = '../data/'
+from .player import Player
+from .match import Match
+
 SQL_NAME = 'tennis'
 
-
 class DataKeeper:
-    def __init__(self, path=SQL_PATH, name=SQL_NAME):
+    def __init__(self, path, name=SQL_NAME):
         db_name = name + '.db'
         db = os.path.join(path, db_name)
         self.connection = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES)
@@ -66,17 +67,46 @@ class DataKeeper:
         self.connection.commit()
     
     def get_player_by_id(self, id):
-        self.cursor.execute(
-            'select from players where id=?',
-            (id,)
+        return Player(
+            *self._get_one(
+                'select * from players where id=?',
+                (id,)
+            )
         )
-
-        return self.cursor.fetchone()
 
     def get_player_by_name(self, name):
-        self.cursor.execute(
-            'select from players where name=?',
-            (name,)
+        return Player(
+            *self._get_one(
+                'select * from players where name=?',
+                (name,)
+            )
         )
 
+    def get_player_won_matches(self, player_id):
+        return map(
+            lambda m: Match(*m),
+            self._get_all(
+                'select * from matches where winner_id=?',
+                (player_id,)
+            )
+        )
+
+    def get_player_losed_matches(self, player_id):
+        return map(
+            lambda m: Match(*m),
+            self._get_all(
+                'select * from matches where loser_id=?',
+                (player_id,)
+            )
+        )
+
+    def get_player_matches(self, player_id):
+        return self.get_player_losed_matches(player_id) + self.get_player_losed_matches(player_id)
+
+    def _get_one(self, sql, tuples):
+        self.cursor.execute(sql, tuples)
         return self.cursor.fetchone()
+
+    def _get_all(self, sql, tuples):
+        self.cursor.execute(sql, tuples)
+        return self.cursor.fetchall()

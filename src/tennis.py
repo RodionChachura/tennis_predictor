@@ -9,14 +9,13 @@ from .player import Player
 from .rank import Rank
 from .logger import setup_logger
 from .utils import years_from_timestamp
-from .constants import CSVS, LAST_RANKS_CSV, PLAYERS_CSV
+from .constants import CSVS, LAST_RANKS_CSV, PLAYERS_CSV, DATA_LOCATION
 
 logger = logging.getLogger(__name__)
 setup_logger()
 
 START_YEAR = 2000
 END_YEAR = 2017
-DATA_LOCATION = os.path.abspath('./data/')
 
 def get_database_from_csv(start_year=START_YEAR, end_year=END_YEAR):
     years = range(start_year, end_year)
@@ -24,28 +23,21 @@ def get_database_from_csv(start_year=START_YEAR, end_year=END_YEAR):
     for year in years:
         all_files += get_matches_csvs(year)
 
-    ranks = []
+    ranks = {}
     for fields in csv_to_lists(LAST_RANKS_CSV):
         date = datetime.strptime(fields[0][:4] + '/' + fields[0][4:-2] + '/' + fields[0][:2], '%Y/%m/%d')
         player_id = int(fields[2])
         rank_points = int(fields[3])
         rank = Rank(player_id, date, rank_points)
 
-        player_rank_already_exists = False
-        to_remove = None
-        for r in ranks:
-            if r.player_id == player_id:
-                player_rank_already_exists = True
-                if r.date < date:
-                    to_remove = r
-                continue
-        if to_remove is not None:
-            ranks.remove(to_remove)
-        if (player_rank_already_exists and to_remove) or not player_rank_already_exists:
-            ranks.append(rank)
-            
+        exist = player_id in ranks
+        if (exist and ranks[player_id].date < date) or not exist:
+            ranks[player_id] = rank
+    
+    db = DataKeeper(DATA_LOCATION)
+
     logger.error('ranks: ' + str(len(ranks)))
-    players = []
+    players = {}
     problematic_players = 0
     no_rank_players = 0  
     for fields in csv_to_lists(PLAYERS_CSV):
@@ -56,11 +48,7 @@ def get_database_from_csv(start_year=START_YEAR, end_year=END_YEAR):
         player_id = int(needed_fields[0])
         player_name = needed_fields[1] + ' ' + needed_fields[2]
         player_dob = int(needed_fields[4])
-        rank_points = None
-        for rank in ranks:
-            if rank.player_id == player_id:
-                rank_points = rank.rank_points
-                continue
+        rank_points = ranks[player_id].rank_points if player_id in ranks else None
         if rank_points is None:
             # logger.error('''Player doesn't have rank
             #     id: {0}
@@ -68,32 +56,28 @@ def get_database_from_csv(start_year=START_YEAR, end_year=END_YEAR):
             #     age: {2}
             # '''.format(player_id, player_name, years_from_timestamp(player_dob)))
             no_rank_players += 1
-
-        players.append(
-            Player(
-                player_id,
-                player_name,
-                player_dob,
-                needed_fields[3],
-                rank_points
-            )
+        players[player_id] = Player(
+            player_id,
+            player_name,
+            player_dob,
+            needed_fields[3],
+            rank_points
         )
+
     logger.error('normal: ' + str(len(players)))
     logger.error('problematic: ' + str(problematic_players))
     logger.error('no rank: ' + str(no_rank_players))
+    for player in players.values():
+        db.add_player(player)
 
     matches = []
     for csv_file in all_files:
         for match in csv_to_dicts(csv_file):
             winner_id = int(match['winner_id'])
             loser_id = int(match['loser_id'])
-            winner = None
-            loser = None
-            for player in players:
-                if player.id == winner_id:
-                    winner = player
-                if player.id == loser_id:
-                    loser = player
+            winner = players.get(winner_id)
+            loser = players.get(loser_id)
+
             if loser is None or winner is None:
                 logger.error('No loser or winner')
                 continue
@@ -107,9 +91,7 @@ def get_database_from_csv(start_year=START_YEAR, end_year=END_YEAR):
                 )
             )
 
-    db = DataKeeper()
-    for player in players:
-        db.add_player(player)
+
     for match in matches:
         db.add_match(match)
 
