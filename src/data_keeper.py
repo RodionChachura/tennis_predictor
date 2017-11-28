@@ -3,11 +3,10 @@ import os
 
 from .player import Player
 from .match import Match
-
-SQL_NAME = 'tennis'
+from .constants import DATA_LOCATION, SQL_NAME
 
 class DataKeeper:
-    def __init__(self, path, name=SQL_NAME):
+    def __init__(self, path=DATA_LOCATION, name=SQL_NAME):
         db_name = name + '.db'
         db = os.path.join(path, db_name)
         self.connection = sqlite3.connect(db, detect_types=sqlite3.PARSE_DECLTYPES)
@@ -17,14 +16,14 @@ class DataKeeper:
             create table if not exists players (
                 id          integer               PRIMARY KEY,
                 name        text                  not null,
-                dob         timestamp,
+                dob         integer,
                 hand        text,
                 rank_points real              
             )''')
 
         self.cursor.execute('''
             create table if not exists matches (
-                date                timestamp,
+                date                integer,
                 score               text,
                 
                 winner_id           integer    not null,
@@ -82,21 +81,31 @@ class DataKeeper:
             )
         )
 
+    def _match_entry_to_match(self, match_entry):
+        winner = self.get_player_by_id(match_entry[2]).with_other_rank_points(match_entry[3])
+        loser = self.get_player_by_id(match_entry[4]).with_other_rank_points(match_entry[5])
+
+        return Match(match_entry[1], match_entry[2], winner, loser)
+
     def get_player_won_matches(self, player_id):
-        return map(
-            lambda m: Match(*m),
-            self._get_all(
-                'select * from matches where winner_id=?',
-                (player_id,)
+        return list(
+            map(
+                self._match_entry_to_match,
+                self._get_all(
+                    'select * from matches where winner_id=?',
+                    (player_id,)
+                )
             )
         )
 
     def get_player_losed_matches(self, player_id):
-        return map(
-            lambda m: Match(*m),
-            self._get_all(
-                'select * from matches where loser_id=?',
-                (player_id,)
+        return list(
+            map(
+                self._match_entry_to_match,
+                self._get_all(
+                    'select * from matches where loser_id=?',
+                    (player_id,)
+                )
             )
         )
 

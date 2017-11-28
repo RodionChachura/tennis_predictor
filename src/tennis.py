@@ -34,7 +34,7 @@ def get_database_from_csv(start_year=START_YEAR, end_year=END_YEAR):
         if (exist and ranks[player_id].date < date) or not exist:
             ranks[player_id] = rank
     
-    db = DataKeeper(DATA_LOCATION)
+    db = DataKeeper()
 
     logger.error('ranks: ' + str(len(ranks)))
     players = {}
@@ -97,7 +97,14 @@ def get_database_from_csv(start_year=START_YEAR, end_year=END_YEAR):
 
     return db
 
-def predict(one, other):
+
+def predict(one_name, other_name):
+    db = DataKeeper()
+    one = db.get_player_by_name(one_name)
+    other = db.get_player_by_name(other_name)
+    one_matches = db.get_player_matches(one.id)
+    other_matches = db.get_player_matches(other.id)
+    logger.error('one matches: ' + str(len(one_matches)) + ' other matches: ' + str(len(other_matches)))
     return {
         'train_set_length': 0,
         'train_set_thrown_data_persentage': 0,
