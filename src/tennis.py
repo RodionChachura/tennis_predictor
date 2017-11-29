@@ -10,6 +10,7 @@ from .rank import Rank
 from .logger import setup_logger
 from .utils import years_from_timestamp
 from .constants import CSVS, LAST_RANKS_CSV, PLAYERS_CSV, DATA_LOCATION
+from .ml import get_forest_reg
 
 logger = logging.getLogger(__name__)
 setup_logger()
@@ -145,12 +146,29 @@ def all_clustered_matches(db, one_player, other_player):
     return matches
     
 
+
 def predict(one_name, other_name):
     db = DataKeeper()
     one = db.get_player_by_name(one_name)
     other = db.get_player_by_name(other_name)
     cluster_matches = all_clustered_matches(db, one, other)
-    logger.error(len(cluster_matches))
+    
+    data = []
+    labels = []
+    for match in cluster_matches:
+        d, l = match.to_ml_data_label()
+        no_points = False
+        if d is None: continue
+        for el in d:
+            if el == '':
+                no_points = True
+        if no_points: continue
+        data.append(d)
+        labels.append(l)
+    
+    regressor = get_forest_reg(data, labels)
+    prediction = regressor.predict([one.get_ml_data() + other.get_ml_data()])
+    logger.error(prediction)
     return {
         'train_set_length': 0,
         'train_set_thrown_data_persentage': 0,
