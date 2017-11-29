@@ -98,13 +98,59 @@ def get_database_from_csv(start_year=START_YEAR, end_year=END_YEAR):
     return db
 
 
+def matches_players(matches):
+    players = {}
+    for match in matches:
+        for player in match.players:
+            if player.id not in players:
+                players[player.id] = player
+
+    return players
+
+def get(unvisited_players, visited_players, get_player_matches, matches):
+    player = unvisited_players[-1]
+    new_matches = matches[:]
+    new_unvisited_players = [x for x in unvisited_players if x != player]
+    
+    for match in get_player_matches(player):
+        skip_match = False
+        for player in match.players:
+            if player in visited_players:
+                if player not in new_unvisited_players:
+                    new_unvisited_players.append(player)
+                skip_match = True
+                continue
+        if not skip_match:
+            new_matches.append(match)
+
+    return (new_unvisited_players, new_matches)
+
+def all_clustered_matches(db, one_player, other_player):
+    unvisited_players = [ one_player, other_player ]
+    visited_players = []
+    matches = []
+    while(len(unvisited_players) > 0):
+        visited_players.append(unvisited_players.pop())
+        for match in db.get_player_matches(one_player.id):
+            skip_match = False
+            for player in match.players:
+                if player in visited_players:
+                    skip_match = True
+                    continue
+                elif player not in unvisited_players:
+                    unvisited_players.append(player)
+            if not skip_match:
+                matches.append(match)
+
+    return matches
+    
+
 def predict(one_name, other_name):
     db = DataKeeper()
     one = db.get_player_by_name(one_name)
     other = db.get_player_by_name(other_name)
-    one_matches = db.get_player_matches(one.id)
-    other_matches = db.get_player_matches(other.id)
-    logger.error('one matches: ' + str(len(one_matches)) + ' other matches: ' + str(len(other_matches)))
+    cluster_matches = all_clustered_matches(db, one, other)
+    logger.error(len(cluster_matches))
     return {
         'train_set_length': 0,
         'train_set_thrown_data_persentage': 0,

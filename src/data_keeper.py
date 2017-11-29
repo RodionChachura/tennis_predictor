@@ -1,9 +1,12 @@
 import sqlite3
 import os
+import logging
 
 from .player import Player
 from .match import Match
 from .constants import DATA_LOCATION, SQL_NAME
+
+logger = logging.getLogger(__name__)
 
 class DataKeeper:
     def __init__(self, path=DATA_LOCATION, name=SQL_NAME):
@@ -85,7 +88,7 @@ class DataKeeper:
         winner = self.get_player_by_id(match_entry[2]).with_other_rank_points(match_entry[3])
         loser = self.get_player_by_id(match_entry[4]).with_other_rank_points(match_entry[5])
 
-        return Match(match_entry[1], match_entry[2], winner, loser)
+        return Match(match_entry[0], match_entry[1], winner, loser)
 
     def get_player_won_matches(self, player_id):
         return list(
