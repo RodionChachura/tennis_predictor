@@ -1,6 +1,7 @@
 import os
 import logging
 from datetime import datetime
+import time
 
 from .data_keeper import DataKeeper
 from .csv_helper import csv_to_dicts, csv_to_lists, get_matches_csvs
@@ -8,7 +9,6 @@ from .match import Match
 from .player import Player
 from .rank import Rank
 from .logger import setup_logger
-from .utils import years_from_timestamp
 from .constants import CSVS, LAST_RANKS_CSV, PLAYERS_CSV, DATA_LOCATION
 from .ml import get_forest_reg
 
@@ -18,6 +18,10 @@ setup_logger()
 START_YEAR = 2000
 END_YEAR = 2017
 
+def csv_date_to_timestamp(csv_date):
+    return int(time.mktime(datetime.strptime(csv_date[:4] + '/' + csv_date[4:-2] + '/' + csv_date[:2], '%Y/%m/%d').timetuple()))
+
+
 def get_database_from_csv(start_year=START_YEAR, end_year=END_YEAR):
     years = range(start_year, end_year)
     all_files = []
@@ -26,7 +30,7 @@ def get_database_from_csv(start_year=START_YEAR, end_year=END_YEAR):
 
     ranks = {}
     for fields in csv_to_lists(LAST_RANKS_CSV):
-        date = datetime.strptime(fields[0][:4] + '/' + fields[0][4:-2] + '/' + fields[0][:2], '%Y/%m/%d')
+        date = csv_date_to_timestamp(fields[0])
         player_id = int(fields[2])
         rank_points = int(fields[3])
         rank = Rank(player_id, date, rank_points)
@@ -48,14 +52,9 @@ def get_database_from_csv(start_year=START_YEAR, end_year=END_YEAR):
             continue
         player_id = int(needed_fields[0])
         player_name = needed_fields[1] + ' ' + needed_fields[2]
-        player_dob = int(needed_fields[4])
+        player_dob = csv_date_to_timestamp(needed_fields[4])
         rank_points = ranks[player_id].rank_points if player_id in ranks else None
         if rank_points is None:
-            # logger.error('''Player doesn't have rank
-            #     id: {0}
-            #     name: {1}
-            #     age: {2}
-            # '''.format(player_id, player_name, years_from_timestamp(player_dob)))
             no_rank_players += 1
         players[player_id] = Player(
             player_id,
@@ -152,11 +151,11 @@ def predict(one_name, other_name):
     one = db.get_player_by_name(one_name)
     other = db.get_player_by_name(other_name)
     cluster_matches = all_clustered_matches(db, one, other)
-    
     data = []
     labels = []
     for match in cluster_matches:
         d, l = match.to_ml_data_label()
+        
         no_points = False
         if d is None: continue
         for el in d:
@@ -168,9 +167,4 @@ def predict(one_name, other_name):
     
     regressor = get_forest_reg(data, labels)
     prediction = regressor.predict([one.get_ml_data() + other.get_ml_data()])
-    logger.error(prediction)
-    return {
-        'train_set_length': 0,
-        'train_set_thrown_data_persentage': 0,
-        'score': 0
-    }
+

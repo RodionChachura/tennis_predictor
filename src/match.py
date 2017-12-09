@@ -1,6 +1,5 @@
 from random import choice
 from .converter import score_to_ratio, hand_to_int
-from .utils import years_from_timestamp
 
 class Match:
     def __init__(self, date, score, winner, loser):

@@ -1,7 +1,6 @@
 import logging
 
 from .converter import score_to_ratio, hand_to_int
-from .utils import years_from_timestamp
 
 logger = logging.getLogger(__name__)
 

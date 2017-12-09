@@ -18,4 +18,4 @@ class TestDB(unittest.TestCase):
         super(TestDB, cls).tearDownClass()
 
     def testPredict(self):
-        predict('Nick Kyrgios', 'Alexander Zverev')
+        predict('Jared Donaldson', 'Karen Khachanov')
